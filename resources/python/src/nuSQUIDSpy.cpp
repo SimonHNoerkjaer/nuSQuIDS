@@ -420,11 +420,19 @@ BOOST_PYTHON_MODULE(nuSQuIDS)
 
   // Register all standard nuSQuIDS and nuSQuIDS atmospheric functions for the user class
   auto nusquids_liv_register = RegisterBasicNuSQuIDSPythonBindings<nuSQUIDSLIV>("nuSQUIDSLIV");
+  auto nusquids_livAtm_register = RegisterBasicAtmNuSQuIDSPythonBindings<nuSQUIDSLIVAtm>("nuSQUIDSLIVAtm");
 
   // Register additional functions or members of the user class
   auto nusquids_liv_class_object = nusquids_liv_register.GetClassObject();
   nusquids_liv_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIV::Set_LIVCoefficient);
-  nusquids_liv_class_object->def("Set_LIVEnergyDependence",&nuSQUIDSLIV::Set_LIVEnergyDependence);
+
+  auto nusquids_livAtm_class_object = nusquids_livAtm_register.GetClassObject();
+  nusquids_livAtm_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient);
+  
+  // nusquids_liv_class_object->def("Set_Direction",&nuSQUIDSLIV::Set_Direction);
+  // nusquids_liv_class_object->def("Set_LIVEnergyDependence",&nuSQUIDSLIV::Set_LIVEnergyDependence);
+
+
 
 
 }

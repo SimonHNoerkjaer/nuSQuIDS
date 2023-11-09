@@ -6,9 +6,17 @@
 #include <nuSQuIDS/nuSQuIDS.h>
 #include <iomanip>
 #include <math.h>
+#include <cmath>
 
 
-// Printing matrix function
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_complex_math.h>
+#include <gsl/gsl_math.h>
+
+
+
+// // Printing matrix function
 void print_gsl_matrix(gsl_matrix_complex* matrix) {
   for (size_t i = 0; i < matrix->size1; i++) {
     for (size_t j = 0; j < matrix->size2; j++) {
@@ -31,25 +39,31 @@ class nuSQUIDSLIV: public nuSQUIDS {
 
   private:
 
-    // Sidereal vs isotropic
-    bool sidereal = false;
 
     // The parameters of the LIV model
-    int LIV_n;
-    double LIV_cft;
+    // int LIV_n;
+    // double LIV_cft;
 
     
 
-    squids::SU_vector LIVP;
-    std::vector<squids::SU_vector> LIVP_evol;
+    // squids::SU_vector LIVP;
+    // std::vector<squids::SU_vector> LIVP_evol;
 
+    squids::SU_vector LIVP_Eindep;
+    std::vector<squids::SU_vector> LIVP_Eindep_evol;
+    squids::SU_vector LIVP_Edep;
+    std::vector<squids::SU_vector> LIVP_Edep_evol;
 
 
     void AddToPreDerive(double x){
       for(unsigned int ei = 0; ei < ne; ei++){
         // asumming same mass hamiltonian for neutrinos/antineutrinos
         squids::SU_vector h0 = H0( E_range[ei], 0 );
-        LIVP_evol[ei] = LIVP.Evolve( h0, (x-Get_t_initial()) );
+        // LIVP_evol[ei] = LIVP.Evolve( h0, (x-Get_t_initial()) );
+
+        LIVP_Eindep_evol[ei] = LIVP_Eindep.Evolve( h0, (x-Get_t_initial()) );
+        LIVP_Edep_evol[ei] = LIVP_Edep.Evolve( h0, (x-Get_t_initial()) );
+
       }
     }
 
@@ -60,9 +74,9 @@ class nuSQUIDSLIV: public nuSQUIDS {
       double sign = 1;
 
       // ================= HERE WE ADD THE NEW PHYSICS ===================
-      potential += sign*pow(E_range[ie], LIV_n) * LIVP_evol[ie]; // <- super important line here is where all the physics is set
+      potential += sign * ( E_range[ie] * LIVP_Edep_evol[ie] + LIVP_Eindep_evol[ie]);         //  H_eff_LIV
       // ================= HERE WE ADD THE NEW PHYSICS ===================
-  
+
       return potential;
     }
 
@@ -74,13 +88,18 @@ class nuSQUIDSLIV: public nuSQUIDS {
     */
 
     // Init LIV params to null values
-    LIV_n = 0;
-    LIV_cft = 0;
+    // LIV_n = 0;
+    // LIV_cft = 0;
 
     // Allocate some matrices
-    LIVP_evol.resize(ne);
+    // LIVP_evol.resize(ne);
+    LIVP_Eindep_evol.resize(ne);
+    LIVP_Edep_evol.resize(ne);
+
     for(unsigned int ei = 0; ei < ne; ei++){
-      LIVP_evol[ei] = squids::SU_vector(nsun);
+      // LIVP_evol[ei] = squids::SU_vector(nsun);
+      LIVP_Eindep_evol[ei] = squids::SU_vector(nsun);
+      LIVP_Edep_evol[ei] = squids::SU_vector(nsun);
     }
 
   }
@@ -115,61 +134,106 @@ class nuSQUIDSLIV: public nuSQUIDS {
     }
 
 
+
     //
     // SME param getters/setters
     //
 
-    void Set_LIVCoefficient(double cft){
+     void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  double cft,  double ra_rad, double dec_rad){
       
-      // gsl_complex a{{ LIV_a_eV , 0.0 }}; //Only using real part right now
-      // gsl_complex c{{ LIV_c , 0.0 }}; //Only using real part right now
+      // dmat is a 3D array of shape (3,3,3) containing a 3x3 matrix for each direction (x,y,z)
+      // loop over directions and assign matrices to gsl matrices
+
+      gsl_matrix_complex* a_eV_x = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* a_eV_y = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* a_eV_z = gsl_matrix_complex_calloc(3, 3);
+
+      gsl_matrix_complex* c_tx = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* c_ty = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* c_tz = gsl_matrix_complex_calloc(3, 3);
+  
+
+      for (size_t i = 0; i < 3; i++) {
+        for (size_t j = 0; j < 3; j++) {
+          gsl_matrix_complex_set(a_eV_x, i, j, gsl_complex_rect(a_mat[0][i][j], 0));
+          gsl_matrix_complex_set(a_eV_y, i, j, gsl_complex_rect(a_mat[1][i][j], 0));
+          gsl_matrix_complex_set(a_eV_z, i, j, gsl_complex_rect(a_mat[2][i][j], 0));
+          gsl_matrix_complex_set(c_tx, i, j, gsl_complex_rect(c_mat[0][i][j], 0));
+          gsl_matrix_complex_set(c_ty, i, j, gsl_complex_rect(c_mat[1][i][j], 0));
+          gsl_matrix_complex_set(c_tz, i, j, gsl_complex_rect(c_mat[2][i][j], 0));
+        }}
+
       
-      gsl_complex c{{ cft , 0.0 }}; //Only using real part right now
+      // construct SU_vectors from matrices
+      squids::SU_vector ax = squids::SU_vector(a_eV_x);
+      squids::SU_vector ay = squids::SU_vector(a_eV_y);
+      squids::SU_vector az = squids::SU_vector(a_eV_z);
+      squids::SU_vector cxt = squids::SU_vector(c_tx);
+      squids::SU_vector cyt = squids::SU_vector(c_ty);
+      squids::SU_vector czt = squids::SU_vector(c_tz);
 
 
-       // defining a complex matrix M which will contain our flavor
-       // violating flavor structure.
-       gsl_matrix_complex * M = gsl_matrix_complex_calloc(3,3); //TODO check num nu 
-       // gsl_matrix_complex_set(M, 0, 0, c);
-       // gsl_matrix_complex_set(M, 1, 1, c);
-       // gsl_matrix_complex_set(M, 2, 2, c);
+      // celestial colatitude and longitude
+      double theta = M_PI/2 + dec_rad;
+      double phi = ra_rad;
 
-      //  gsl_matrix_complex_set(M, 0, 0, c); //TODO This needs fixing - what is correct structure?
-      //  gsl_matrix_complex_set(M, 1, 1, c);
-       gsl_matrix_complex_set(M, 2, 2, c);
+      // r vector
+      double NX = sin(theta) * cos(phi);
+      double NY = sin(theta) * sin(phi);
+      double NZ = cos(theta);
 
-       // gsl_matrix_complex_set(M, 1, 0, c);
-       // gsl_matrix_complex_set(M, 0, 1, c);
-       // gsl_matrix_complex_set(M, 2, 1, c);
-       // gsl_matrix_complex_set(M, 1, 2, c);
 
-       LIVP = squids::SU_vector(M);
 
-      //  std::cout << "Matrix:" << std::endl;
-      //  print_gsl_matrix(M);
+      // Amplitude to be multiplied with cos(omega_sid L)
+      squids::SU_vector Ac0 = -NX * ax - NY * ay; 
+      squids::SU_vector Ac1 = 2 * NX * cxt + 2 * NY * cyt;
+      squids::SU_vector Const = NZ * az;
 
-       // rotate from flavor to mass basis
-       // LIVP.RotateToB1(params);
+
+      // Heff =  Ac0 + Const + E * Ac1 = LIVP_Eindep + E * LIVP_Edep (see HI function above)
+      LIVP_Edep = squids::SU_vector(Ac1);           // E dependent part of LIVP 
+      LIVP_Eindep = squids::SU_vector(Ac0+Const);   // E independent part of LIVP
+
+      // std::cout << "Energy-dependent H_eff : " << LIVP_Edep << std::endl;
+      // std::cout << "Energy-independent H_eff : " << LIVP_Eindep << std::endl;
+
 
        // free allocated matrix
-       gsl_matrix_complex_free(M);
-
-
-       // c_params = lv_params;
-       // LIV_params_set = true;
+      gsl_matrix_complex_free(a_eV_x);
+      gsl_matrix_complex_free(a_eV_y);
+      gsl_matrix_complex_free(a_eV_z);
+      gsl_matrix_complex_free(c_tx);
+      gsl_matrix_complex_free(c_ty);
+      gsl_matrix_complex_free(c_tz);
     }
+};
 
-    // void Set_LIVCoefficient(double cft){ //TODO complex number?
-    //   LIV_cft = cft;
-    // }
 
-    void Set_LIVEnergyDependence(int n){
-      LIV_n = n;
-    }
+
+/*
+  nuSQUIDSAtm extended to include LIV
+*/
+
+class nuSQUIDSLIVAtm : public nuSQUIDSAtm<nuSQUIDSLIV> {
+
+  public:
+
+    // Use the base class constructors
+    using nuSQUIDSAtm<nuSQUIDSLIV>::nuSQUIDSAtm;
+
+
+    // Wrap all the getters/setters
+
+    void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  double cft,  double ra_rad, double dec_rad){
+      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_LIVCoefficient(a_mat,c_mat,cft,ra_rad,dec_rad);
+    } 
+    
 
 };
 
-} // close nusquids namespace
+
+
+}; // close nusquids namespace
 
 #endif //nusquidslv_h
 
