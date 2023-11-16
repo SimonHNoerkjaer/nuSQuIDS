@@ -384,6 +384,7 @@ template<typename BaseType, typename = typename std::enable_if<std::is_base_of<n
       class_object->def("Set_EvalThreads",&nuSQUIDSAtm<BaseType>::Set_EvalThreads);
       class_object->def("Get_EvalThreads",&nuSQUIDSAtm<BaseType>::Get_EvalThreads);
       class_object->def("Set_EarthModel",&nuSQUIDSAtm<BaseType>::Set_EarthModel);
+      class_object->def("Set_Body",&nuSQUIDSAtm<BaseType>::Set_Body, bp::arg("Body"));
       class_object->def("WriteStateHDF5",&nuSQUIDSAtm<BaseType>::WriteStateHDF5);
       class_object->def("ReadStateHDF5",&nuSQUIDSAtm<BaseType>::ReadStateHDF5);
       class_object->def("Set_MixingAngle",&nuSQUIDSAtm<BaseType>::Set_MixingAngle);

@@ -228,10 +228,6 @@ class nuSQUIDSLIVAtm : public nuSQUIDSAtm<nuSQUIDSLIV> {
       for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_LIVCoefficient(a_mat,c_mat,e_mat,ra_rad,dec_rad);
     } 
 
-    void Set_Body(std::shared_ptr<Body> body){
-      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_Body(body);
-    }
-
 };
 
 

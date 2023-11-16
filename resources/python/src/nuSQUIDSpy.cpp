@@ -429,7 +429,6 @@ BOOST_PYTHON_MODULE(nuSQuIDS)
 
   auto nusquids_livAtm_class_object = nusquids_livAtm_register.GetClassObject();
   nusquids_livAtm_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient);
-  nusquids_livAtm_class_object->def("Set_Body",&nuSQUIDSLIVAtm::Set_Body);
 
   // nusquids_liv_class_object->def("Set_Direction",&nuSQUIDSLIV::Set_Direction);
   // nusquids_liv_class_object->def("Set_LIVEnergyDependence",&nuSQUIDSLIV::Set_LIVEnergyDependence);
