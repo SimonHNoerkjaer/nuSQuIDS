@@ -139,7 +139,7 @@ class nuSQUIDSLIV: public nuSQUIDS {
     // SME param getters/setters
     //
 
-     void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  double cft,  double ra_rad, double dec_rad){
+     void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  const marray<double,3>& e_mat,  double ra_rad, double dec_rad){
       
       // dmat is a 3D array of shape (3,3,3) containing a 3x3 matrix for each direction (x,y,z)
       // loop over directions and assign matrices to gsl matrices
@@ -224,10 +224,13 @@ class nuSQUIDSLIVAtm : public nuSQUIDSAtm<nuSQUIDSLIV> {
 
     // Wrap all the getters/setters
 
-    void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  double cft,  double ra_rad, double dec_rad){
-      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_LIVCoefficient(a_mat,c_mat,cft,ra_rad,dec_rad);
+    void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  const marray<double,3>& e_mat,  double ra_rad, double dec_rad){
+      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_LIVCoefficient(a_mat,c_mat,e_mat,ra_rad,dec_rad);
     } 
-    
+
+    void Set_Body(std::shared_ptr<Body> body){
+      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_Body(body);
+    }
 
 };
 
