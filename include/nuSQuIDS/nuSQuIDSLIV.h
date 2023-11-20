@@ -35,6 +35,11 @@ void print_gsl_matrix(gsl_matrix_complex* matrix) {
 
 namespace nusquids {
 
+
+//
+// nuSQuIDS LIV model
+//
+
 class nuSQUIDSLIV: public nuSQUIDS {
 
   private:
@@ -182,13 +187,10 @@ class nuSQUIDSLIV: public nuSQUIDS {
       double NY = sin(theta) * sin(phi);
       double NZ = cos(theta);
 
-
-
       // Amplitude to be multiplied with cos(omega_sid L)
       squids::SU_vector Ac0 = -NX * ax - NY * ay; 
       squids::SU_vector Ac1 = 2 * NX * cxt + 2 * NY * cyt;
       squids::SU_vector Const = NZ * az;
-
 
       // Heff =  Ac0 + Const + E * Ac1 = LIVP_Eindep + E * LIVP_Edep (see HI function above)
       LIVP_Edep = squids::SU_vector(Ac1);           // E dependent part of LIVP 
@@ -196,7 +198,6 @@ class nuSQUIDSLIV: public nuSQUIDS {
 
       // std::cout << "Energy-dependent H_eff : " << LIVP_Edep << std::endl;
       // std::cout << "Energy-independent H_eff : " << LIVP_Eindep << std::endl;
-
 
        // free allocated matrix
       gsl_matrix_complex_free(a_eV_x);
@@ -223,16 +224,11 @@ class nuSQUIDSLIVAtm : public nuSQUIDSAtm<nuSQUIDSLIV> {
 
 
     // Wrap all the getters/setters
-
-    void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  const marray<double,3>& e_mat,  double ra_rad, double dec_rad){
-      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_LIVCoefficient(a_mat,c_mat,e_mat,ra_rad,dec_rad);
+    void Set_LIVCoefficient(const marray<double,3>& a_mat, const marray<double,3>& c_mat, const marray<double,3>& e_mat, double ra_rad, double dec_rad){
+      for(nuSQUIDSLIV& nsq : this->GetnuSQuIDS()) nsq.Set_LIVCoefficient(a_mat, c_mat, e_mat, ra_rad, dec_rad);
     } 
 
 };
-
-
-
-}; // close nusquids namespace
 
 #endif //nusquidslv_h
 
