@@ -22,6 +22,7 @@
  ******************************************************************************/
 
 #include "nuSQUIDSpy.h"
+#include <nuSQuIDS/nuSQuIDSLIV.h>
 
 BOOST_PYTHON_MODULE(nuSQuIDS)
 {
@@ -409,4 +410,21 @@ BOOST_PYTHON_MODULE(nuSQuIDS)
   marray_from_python<2>();
   marray_from_python<3>();
   marray_from_python<4>();
-}
+
+
+  //
+  // LIV
+  //
+
+  auto nusquids_liv_register = RegisterBasicNuSQuIDSPythonBindings<nuSQUIDSLIV>("nuSQUIDSLIV");
+  auto nusquids_liv_atm_register = RegisterBasicAtmNuSQuIDSPythonBindings<nuSQUIDSLIV>("nuSQUIDSLIVAtm");
+
+  auto nusquids_liv_class_object = nusquids_liv_register.GetClassObject();
+  nusquids_liv_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIV::Set_LIVCoefficient);
+  nusquids_liv_class_object->def("Set_LIVEnergyDependence",&nuSQUIDSLIV::Set_LIVEnergyDependence);
+
+  auto nusquids_liv_atm_class_object = nusquids_liv_atm_register.GetClassObject();
+  nusquids_liv_atm_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient);
+
+
+} // end BOOST_PYTHON_MODULE
