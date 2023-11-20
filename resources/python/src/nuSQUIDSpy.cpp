@@ -421,7 +421,6 @@ BOOST_PYTHON_MODULE(nuSQuIDS)
 
   auto nusquids_liv_class_object = nusquids_liv_register.GetClassObject();
   nusquids_liv_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIV::Set_LIVCoefficient);
-  nusquids_liv_class_object->def("Set_LIVEnergyDependence",&nuSQUIDSLIV::Set_LIVEnergyDependence);
 
   auto nusquids_liv_atm_class_object = nusquids_liv_atm_register.GetClassObject();
   nusquids_liv_atm_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient);
