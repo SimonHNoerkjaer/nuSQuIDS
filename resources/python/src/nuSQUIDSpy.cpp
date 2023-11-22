@@ -413,17 +413,89 @@ BOOST_PYTHON_MODULE(nuSQuIDS)
 
 
   //
-  // LIV
+  // nuSQUIDSLIV
   //
 
   auto nusquids_liv_register = RegisterBasicNuSQuIDSPythonBindings<nuSQUIDSLIV>("nuSQUIDSLIV");
-  auto nusquids_liv_atm_register = RegisterBasicAtmNuSQuIDSPythonBindings<nuSQUIDSLIV>("nuSQUIDSLIVAtm");
 
   auto nusquids_liv_class_object = nusquids_liv_register.GetClassObject();
   nusquids_liv_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIV::Set_LIVCoefficient);
 
-  auto nusquids_liv_atm_class_object = nusquids_liv_atm_register.GetClassObject();
-  nusquids_liv_atm_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient);
+
+  //
+  // nuSQUIDSLIVAtm
+  //
+
+  //TODO using RegisterBasicAtmNuSQuIDSPythonBindings isn't working currently, builds but get run-time sisues with nuSQUIDSLIVAtm (lvalue) first arg of any function
+  //TODO resolve this properly, but for now just manually implementing Atm bindings
+
+  // auto nusquids_liv_atm_register = RegisterBasicAtmNuSQuIDSPythonBindings<nuSQUIDSLIV>("nuSQUIDSLIVAtm");
+  // auto nusquids_liv_atm_class_object = nusquids_liv_atm_register.GetClassObject();
+  // nusquids_liv_atm_class_object->def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient);
+  // nusquids_liv_atm_class_object->def("Foo",&nuSQUIDSLIVAtm::Foo);
+
+  class_<nuSQUIDSLIVAtm, boost::noncopyable, std::shared_ptr<nuSQUIDSLIVAtm> >("nuSQUIDSLIVAtm", no_init) //TODO This is the thing to remove once fix the issues using RegisterBasicAtmNuSQuIDSPythonBindings
+    .def(init<marray<double,1>,marray<double,1>,unsigned int,NeutrinoType>(args("CosZenith_vector","E_vector","numneu","NT")))
+    .def(init<marray<double,1>,marray<double,1>,unsigned int,NeutrinoType,bool>(args("CosZenith_vector","E_vector","numneu","NT","iinteraction")))
+    .def(init<marray<double,1>,marray<double,1>,unsigned int,NeutrinoType,bool,std::shared_ptr<CrossSectionLibrary>>(args("CosZenith_vector","E_vector","numneu","NT","iinteraction","ncs")))
+    .def(init<std::string>(args("filename")))
+    .def("EvolveState",&nuSQUIDSLIVAtm::EvolveState)
+    .def("Set_TauRegeneration",&nuSQUIDSLIVAtm::Set_TauRegeneration)
+    .def("EvalFlavor",(double(nuSQUIDSLIVAtm::*)(unsigned int,double,double,unsigned int,bool) const)&nuSQUIDSLIVAtm::EvalFlavor,
+        nuSQUIDSAtm_EvalFlavor_overload<nuSQUIDSLIVAtm>(args("Flavor","cos(theta)","Neutrino Energy","NeuType","BoolToRandomzeProdutionHeight"),
+          "nuSQuIDSAtm evaluate flux.."))
+    .def("Set_EvalThreads",&nuSQUIDSLIVAtm::Set_EvalThreads)
+    .def("Get_EvalThreads",&nuSQUIDSLIVAtm::Get_EvalThreads)
+    .def("Set_EarthModel",&nuSQUIDSLIVAtm::Set_EarthModel)
+    .def("WriteStateHDF5",&nuSQUIDSLIVAtm::WriteStateHDF5)
+    .def("ReadStateHDF5",&nuSQUIDSLIVAtm::ReadStateHDF5)
+    .def("Set_MixingAngle",&nuSQUIDSLIVAtm::Set_MixingAngle)
+    .def("Get_MixingAngle",&nuSQUIDSLIVAtm::Get_MixingAngle)
+    .def("Set_CPPhase",&nuSQUIDSLIVAtm::Set_CPPhase)
+    .def("Get_CPPhase",&nuSQUIDSLIVAtm::Get_CPPhase)
+    .def("Set_SquareMassDifference",&nuSQUIDSLIVAtm::Set_SquareMassDifference)
+    .def("Get_SquareMassDifference",&nuSQUIDSLIVAtm::Get_SquareMassDifference)
+    .def("Set_h",(void(nuSQUIDSLIVAtm::*)(double))&nuSQUIDSLIVAtm::Set_h)
+    .def("Set_h",(void(nuSQUIDSLIVAtm::*)(double,unsigned int))&nuSQUIDSLIVAtm::Set_h)
+    .def("Set_h_max",(void(nuSQUIDSLIVAtm::*)(double))&nuSQUIDSLIVAtm::Set_h_max)
+    .def("Set_h_max",(void(nuSQUIDSLIVAtm::*)(double,unsigned int))&nuSQUIDSLIVAtm::Set_h_max)
+    .def("Set_h_min",(void(nuSQUIDSLIVAtm::*)(double))&nuSQUIDSLIVAtm::Set_h_min)
+    .def("Set_h_min",(void(nuSQUIDSLIVAtm::*)(double,unsigned int))&nuSQUIDSLIVAtm::Set_h_min)
+    .def("Set_ProgressBar",&nuSQUIDSLIVAtm::Set_ProgressBar)
+    .def("Set_MixingParametersToDefault",&nuSQUIDSLIVAtm::Set_MixingParametersToDefault)
+    .def("Set_GSL_step",wrap_nusqatm_Set_GSL_STEP<nuSQUIDSLIV>)
+    .def("Set_rel_error",(void(nuSQUIDSLIVAtm::*)(double))&nuSQUIDSLIVAtm::Set_rel_error)
+    .def("Set_rel_error",(void(nuSQUIDSLIVAtm::*)(double, unsigned int))&nuSQUIDSLIVAtm::Set_rel_error)
+    .def("Set_abs_error",(void(nuSQUIDSLIVAtm::*)(double))&nuSQUIDSLIVAtm::Set_abs_error)
+    .def("Set_abs_error",(void(nuSQUIDSLIVAtm::*)(double, unsigned int))&nuSQUIDSLIVAtm::Set_abs_error)
+    .def("Set_EvolLowPassCutoff",&nuSQUIDSLIVAtm::Set_EvolLowPassCutoff)
+    .def("Set_EvolLowPassScale",&nuSQUIDSLIVAtm::Set_EvolLowPassScale)
+    .def("GetNumE",&nuSQUIDSLIVAtm::GetNumE)
+    .def("GetNumCos",&nuSQUIDSLIVAtm::GetNumCos)
+    .def("GetNumNeu",&nuSQUIDSLIVAtm::GetNumNeu)
+    .def("GetNumRho",&nuSQUIDSLIVAtm::GetNumRho)
+    .def("GetnuSQuIDS",(std::vector<nuSQUIDSLIV>&(nuSQUIDSLIVAtm::*)())&nuSQUIDSLIVAtm::GetnuSQuIDS,boost::python::return_internal_reference<>())
+    .def("GetnuSQuIDS",(nuSQUIDSLIV&(nuSQUIDSLIVAtm::*)(unsigned int))&nuSQUIDSLIVAtm::GetnuSQuIDS,boost::python::return_internal_reference<>())
+    .def("Set_initial_state",(void(nuSQUIDSLIVAtm::*)(const marray<double,3>&, Basis))&nuSQUIDSLIVAtm::Set_initial_state,nuSQUIDSAtm_Set_initial_state<nuSQUIDSLIVAtm>())
+    .def("Set_initial_state",(void(nuSQUIDSLIVAtm::*)(const marray<double,4>&, Basis))&nuSQUIDSLIVAtm::Set_initial_state,nuSQUIDSAtm_Set_initial_state<nuSQUIDSLIVAtm>())
+    .def("GetStates", (marray<double,2>(nuSQUIDSLIVAtm::*)(unsigned int))&nuSQUIDSLIVAtm::GetStates,
+      nuSQUIDSAtm_GetStates_overload<nuSQUIDSLIVAtm>(args("rho"), "Get evolved states of all nodes"))
+    .def("GetERange",&nuSQUIDSLIVAtm::GetERange)
+    .def("GetCosthRange",&nuSQUIDSLIVAtm::GetCosthRange)
+    .def("Set_IncludeOscillations",&nuSQUIDSLIVAtm::Set_IncludeOscillations)
+    .def("Set_GlashowResonance",&nuSQUIDSLIVAtm::Set_GlashowResonance)
+    .def("Set_TauRegeneration",&nuSQUIDSLIVAtm::Set_TauRegeneration)
+    .def("Set_AllowConstantDensityOscillationOnlyEvolution",&nuSQUIDSLIVAtm::Set_AllowConstantDensityOscillationOnlyEvolution)
+    .def("Set_PositivyConstrain",&nuSQUIDSLIVAtm::Set_PositivityConstrain)
+    .def("Set_PositivyConstrainStep",&nuSQUIDSLIVAtm::Set_PositivityConstrainStep)
+    .def("Get_EvalThreads",&nuSQUIDSLIVAtm::Get_EvalThreads)
+    .def("Set_EvalThreads",&nuSQUIDSLIVAtm::Set_EvalThreads)
+    .def("Set_EarthModel",&nuSQUIDSLIVAtm::Set_EarthModel)
+    .def("Set_Body",&nuSQUIDSLIVAtm::Set_Body, bp::arg("Body"))
+    .def("SetNeutrinoCrossSections",&nuSQUIDSLIVAtm::SetNeutrinoCrossSections)
+    .def("GetNeutrinoCrossSections",&nuSQUIDSLIVAtm::GetNeutrinoCrossSections)
+    .def("Set_LIVCoefficient",&nuSQUIDSLIVAtm::Set_LIVCoefficient)
+  ;
 
 
 } // end BOOST_PYTHON_MODULE
