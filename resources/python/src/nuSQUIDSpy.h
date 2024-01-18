@@ -309,6 +309,7 @@ template<typename BaseType, typename = typename std::enable_if<std::is_base_of<n
       class_object->def("EvalMassAtNode",(double(BaseType::*)(unsigned int,unsigned int,unsigned int) const)&BaseType::EvalMassAtNode);
       class_object->def("EvalFlavorAtNode",(double(BaseType::*)(unsigned int,unsigned int,unsigned int) const)&BaseType::EvalFlavorAtNode);
       class_object->def("GetHamiltonian",&BaseType::GetHamiltonian);
+      class_object->def("GetHamiltonianAtTime",&BaseType::GetHamiltonianAtTime);
       class_object->def("GetState",(const squids::SU_vector&(BaseType::*)(unsigned int))&BaseType::GetState, return_value_policy<copy_const_reference>());
       class_object->def("GetState",(const squids::SU_vector&(BaseType::*)(unsigned int, unsigned int))&BaseType::GetState, return_value_policy<copy_const_reference>());
       class_object->def("Set_EvolLowPassCutoff", &BaseType::Set_EvolLowPassCutoff);

@@ -1685,6 +1685,44 @@ squids::SU_vector nuSQUIDS::GetHamiltonian(unsigned int ei, unsigned int rho){
   return H0(E_range[ei],rho)+HI(ei,rho,Get_t());
 }
 
+
+
+marray<double,3> nuSQUIDS::GetHamiltonianAtTime(double x, unsigned int ei, unsigned int rho, bool flavor_basis) {
+
+  // Checks
+  if (!ienergy)
+    throw std::runtime_error("nuSQUIDS::Error::Energy not initialized");
+
+  // Get the Hamiltonian (in SU vector form) at the specified time/position 
+  PreDerive(x);
+  squids::SU_vector H_su = H0(E_range[ei],rho) + HI(ei, rho, x);
+  // squids::SU_vector H_su = this->GetHamiltonian(ei, rho);
+
+  // Rotate to flavor basis, if requested
+  if (flavor_basis) {
+    H_su.RotateToB1(params);
+  }
+
+  // Convert to GSL matrix version
+  gsl_matrix_complex* H_gsl = gsl_matrix_complex_calloc(numneu, numneu);
+  H_su.GetGSLMatrix(H_gsl);
+
+  // Now convert to marray, which is something that can be converted to numpy array in pybindings
+  marray<double,3> H{numneu, numneu, 2};
+  for( unsigned int i = 0 ; i < numneu ; ++i ) {
+      for( unsigned int j = 0 ; j < numneu ; ++j ) {
+        H[i][j][0] = GSL_REAL(gsl_matrix_complex_get(H_gsl,i,j));
+        H[i][j][1] = GSL_IMAG(gsl_matrix_complex_get(H_gsl,i,j));
+      }
+  }
+
+  gsl_matrix_complex_free(H_gsl);
+
+  return H;
+
+}
+
+
 void nuSQUIDS::WriteStateHDF5(std::string str,std::string grp,bool save_cross_section, std::string cross_section_grp_loc, bool overwrite) const{
   if ( body == nullptr )
     throw std::runtime_error("nuSQUIDS::Error::BODY is a NULL pointer");

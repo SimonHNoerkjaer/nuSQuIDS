@@ -887,6 +887,10 @@ protected:
 
     /// \brief Return the Hamiltonian at the current time
     squids::SU_vector GetHamiltonian(unsigned int ei, unsigned int rho = 0);
+
+    /// \brief Return the Hamiltonian at a chosen time, possibly in the flavor basis
+    marray<double,3> GetHamiltonianAtTime(double x, unsigned int ei, unsigned int rho = 0, bool flavor_basis = false);
+
     /// \brief Returns the state
     const squids::SU_vector& GetState(unsigned int ei,unsigned int rho = 0) const{
       return state[ei].rho[rho];
