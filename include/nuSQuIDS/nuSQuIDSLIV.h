@@ -72,11 +72,16 @@ class nuSQUIDSLIV: public nuSQUIDS {
 
       squids::SU_vector potential = nuSQUIDS::HI(ie, irho);
       double sign = 1;
+      // if (NT==antineutrino){                                      // maybe add (irho == 1 and NT==both)
+      //     // antineutrino matter potential flips sign
+      //     sign*=(-1);
 
       // ================= HERE WE ADD THE NEW PHYSICS ===================
       potential += sign * ( E_range[ie] * LIVP_Edep_evol[ie] + LIVP_Eindep_evol[ie]);         //  H_eff_LIV
       // ================= HERE WE ADD THE NEW PHYSICS ===================
 
+      // std::cout << "H_eff : " << potential << std::endl;
+      
       return potential;
     }
 
@@ -141,6 +146,9 @@ class nuSQUIDSLIV: public nuSQUIDS {
 
      void Set_LIVCoefficient(const marray<double,3>& a_mat,const marray<double,3>& c_mat,  const marray<double,3>& e_mat,  double ra_rad, double dec_rad){
       
+      // 
+      // Assign LIV parameters:
+      //
       // dmat is a 3D array of shape (3,3,3) containing a 3x3 matrix for each direction (x,y,z)
       // loop over directions and assign matrices to gsl matrices
 
@@ -163,15 +171,13 @@ class nuSQUIDSLIV: public nuSQUIDS {
           gsl_matrix_complex_set(c_tz, i, j, gsl_complex_rect(c_mat[2][i][j], 0));
         }}
 
-      
-      // construct SU_vectors from matrices
-      squids::SU_vector ax = squids::SU_vector(a_eV_x);
-      squids::SU_vector ay = squids::SU_vector(a_eV_y);
-      squids::SU_vector az = squids::SU_vector(a_eV_z);
-      squids::SU_vector cxt = squids::SU_vector(c_tx);
-      squids::SU_vector cyt = squids::SU_vector(c_ty);
-      squids::SU_vector czt = squids::SU_vector(c_tz);
 
+      // std::cout << "a_eV_y : " << std::endl;
+      // print_gsl_matrix(a_eV_y);
+
+      //
+      // Define Coordinate system
+      //
 
       // celestial colatitude and longitude
       double theta = M_PI/2 + dec_rad;
@@ -180,22 +186,103 @@ class nuSQUIDSLIV: public nuSQUIDS {
       // r vector
       double NX = sin(theta) * cos(phi);
       double NY = sin(theta) * sin(phi);
-      double NZ = cos(theta);
+      double NZ = - cos(theta);
 
 
 
-      // Amplitude to be multiplied with cos(omega_sid L)
-      squids::SU_vector Ac0 = -NX * ax - NY * ay; 
-      squids::SU_vector Ac1 = 2 * NX * cxt + 2 * NY * cyt;
-      squids::SU_vector Const = NZ * az;
+      //
+      // Calculate LIV effective Hamiltonian with GSL matrix operations
+      //
+
+      // Amplitude equations: (cos(omega_sid L) amplitudes)
+      // Ac0 = -NX * ax - NY * ay; 
+      // Ac1 = 2 * NX * cxt + 2 * NY * cyt;
+      // Const = NZ * az;
+
+      // Declare Ac0, Ac1, and Const matrices
+      gsl_matrix_complex* Ac0 = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* Ac1 = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* Const = gsl_matrix_complex_calloc(3, 3);
+
+      // Calculate Ac0, Ac1, and Const matrices
+      gsl_matrix_complex_scale(a_eV_x, gsl_complex_rect(-NX, 0));
+      gsl_matrix_complex_scale(a_eV_y, gsl_complex_rect(-NY, 0));
+      gsl_matrix_complex_memcpy(Ac0, a_eV_x);
+      gsl_matrix_complex_add(Ac0, a_eV_y);
+
+      gsl_matrix_complex_scale(c_tx, gsl_complex_rect(2 * NX, 0));
+      gsl_matrix_complex_scale(c_ty, gsl_complex_rect(2 * NY, 0));
+      gsl_matrix_complex_memcpy(Ac1, c_tx);
+      gsl_matrix_complex_add(Ac1, c_ty);
+
+      gsl_matrix_complex_memcpy(Const, a_eV_z);
+      gsl_matrix_complex_scale(Const, gsl_complex_rect(NZ, 0));
+
+
+
+
+      // Declare LIVP_Edep and LIVP_Eindep matrices
+      gsl_matrix_complex* LIVP_Edep_GSL = gsl_matrix_complex_calloc(3, 3);
+      gsl_matrix_complex* LIVP_Eindep_GSL = gsl_matrix_complex_calloc(3, 3);
+
+      // Calculate LIVP_Edep matrix
+      gsl_matrix_complex_memcpy(LIVP_Edep_GSL, Ac1);
+
+      // Calculate LIVP_Eindep matrix
+      gsl_matrix_complex_memcpy(LIVP_Eindep_GSL, Ac0);
+      gsl_matrix_complex_add(LIVP_Eindep_GSL, Const);
+
+      
+
+      // std::cout << "Energy-dependent H_eff : " << std::endl;
+      // print_gsl_matrix(LIVP_Edep_GSL);
+      // std::cout << "Energy-independent H_eff : " << std::endl;
+      // print_gsl_matrix(LIVP_Eindep_GSL);
+
 
 
       // Heff =  Ac0 + Const + E * Ac1 = LIVP_Eindep + E * LIVP_Edep (see HI function above)
-      LIVP_Edep = squids::SU_vector(Ac1);           // E dependent part of LIVP 
-      LIVP_Eindep = squids::SU_vector(Ac0+Const);   // E independent part of LIVP
+      LIVP_Edep = squids::SU_vector(LIVP_Edep_GSL);           // E dependent part of LIVP 
+      LIVP_Eindep = squids::SU_vector(LIVP_Eindep_GSL);   // E independent part of LIVP
 
-      // std::cout << "Energy-dependent H_eff : " << LIVP_Edep << std::endl;
-      // std::cout << "Energy-independent H_eff : " << LIVP_Eindep << std::endl;
+
+
+
+
+
+      
+      // // construct SU_vectors from matrices
+      // squids::SU_vector ax = squids::SU_vector(a_eV_x);
+      // squids::SU_vector ay = squids::SU_vector(a_eV_y);
+      // squids::SU_vector az = squids::SU_vector(a_eV_z);
+      // squids::SU_vector cxt = squids::SU_vector(c_tx);
+      // squids::SU_vector cyt = squids::SU_vector(c_ty);
+      // squids::SU_vector czt = squids::SU_vector(c_tz);
+
+
+      // // celestial colatitude and longitude
+      // double theta = M_PI/2 + dec_rad;
+      // double phi = ra_rad;
+
+      // // r vector
+      // double NX = - sin(theta) * cos(phi);
+      // double NY = - sin(theta) * sin(phi);
+      // double NZ = - cos(theta);
+
+
+
+      // // Amplitude to be multiplied with cos(omega_sid L)
+      // squids::SU_vector Ac0 = -NX * ax - NY * ay; 
+      // squids::SU_vector Ac1 = 2 * NX * cxt + 2 * NY * cyt;
+      // squids::SU_vector Const = NZ * az;
+
+
+      // // Heff =  Ac0 + Const + E * Ac1 = LIVP_Eindep + E * LIVP_Edep (see HI function above)
+      // LIVP_Edep = squids::SU_vector(Ac1);           // E dependent part of LIVP 
+      // LIVP_Eindep = squids::SU_vector(Ac0+Const);   // E independent part of LIVP
+
+      // // std::cout << "Energy-dependent H_eff : " << LIVP_Edep << std::endl;
+      // // std::cout << "Energy-independent H_eff : " << LIVP_Eindep << std::endl;
 
 
        // free allocated matrix
@@ -205,6 +292,11 @@ class nuSQUIDSLIV: public nuSQUIDS {
       gsl_matrix_complex_free(c_tx);
       gsl_matrix_complex_free(c_ty);
       gsl_matrix_complex_free(c_tz);
+      gsl_matrix_complex_free(Ac0);
+      gsl_matrix_complex_free(Ac1);
+      gsl_matrix_complex_free(Const);
+      gsl_matrix_complex_free(LIVP_Edep_GSL);
+      gsl_matrix_complex_free(LIVP_Eindep_GSL);
     }
 };
 
